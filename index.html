@@ -453,14 +453,16 @@
  }
  @media (max-width: 767px) {
  #lead-form .checkbox-container {
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
  }
  #lead-form input[type="checkbox"] {
-  margin-top: 0.25rem;
+  margin-top: 0;
+  margin-right: 0.5rem;
  }
  #lead-form .checkbox-label {
-  max-width: 100%;
+  max-width: calc(100% - 2rem);
  }
  }
  #lead-form input[type="checkbox"] {
@@ -792,6 +794,8 @@
       <p class="text-sm md:text-base">We'll reach out soon to discuss your brand's growth.</p>
      </div>
      <form id="lead-form" class="space-y-4 text-text-dark" action="https://formspree.io/f/meolkkvy" method="POST">
+      <input type="hidden" name="_next" value="https://activatepartnerships.github.io/thank-you.html">
+      <input type="hidden" name="_subject" value="New Contact Form Submission">
       <div class="relative">
        <input type="text" id="name" name="name" required class="w-full rounded-lg" placeholder=" " aria-describedby="name-error">
        <label for="name" class="text-sm font-medium">Full Name</label>
@@ -947,7 +951,7 @@
        errorElement.textContent = `Please enter a message between ${messageMinLength} and ${messageMaxLength} characters.`;
        errorElement.style.display = 'block';
        hasError = true;
-      } else if (!input.value.trim()) {
+      } else if (!input.value.trim() && input.required) {
        input.setAttribute('aria-invalid', 'true');
        errorElement.style.display = 'block';
        hasError = true;
@@ -963,23 +967,28 @@
        body: new FormData(leadForm),
        mode: 'cors',
        headers: { 'Accept': 'application/json' }
-      }).then(response => {
-       if (response.ok) {
-        leadForm.classList.add('hidden');
-        successMessage.classList.remove('hidden');
-       } else {
-        throw new Error('Form submission failed');
-       }
-      }).catch(error => {
-       console.error('Form submission failed:', error);
-       const errorMessageContainer = document.createElement('div');
-       errorMessageContainer.textContent = 'An error occurred. Please try again later.';
-       errorMessageContainer.className = 'mt-3 p-2 bg-red-100 text-red-800 rounded-lg text-center text-sm';
-       errorMessageContainer.setAttribute('aria-live', 'polite');
-       leadForm.parentNode.insertBefore(errorMessageContainer, leadForm.nextSibling);
-       leadForm.classList.remove('hidden');
-       successMessage.classList.add('hidden');
-      });
+      })
+       .then(response => {
+        if (response.ok) {
+         leadForm.classList.add('hidden');
+         successMessage.classList.remove('hidden');
+         leadForm.reset();
+        } else {
+         return response.json().then(data => {
+          throw new Error(data.error || 'Form submission failed');
+         });
+        }
+       })
+       .catch(error => {
+        console.error('Form submission failed:', error);
+        const errorMessageContainer = document.createElement('div');
+        errorMessageContainer.textContent = `An error occurred: ${error.message}. Please try again later.`;
+        errorMessageContainer.className = 'mt-3 p-2 bg-red-100 text-red-800 rounded-lg text-center text-sm';
+        errorMessageContainer.setAttribute('aria-live', 'polite');
+        leadForm.parentNode.insertBefore(errorMessageContainer, leadForm.nextSibling);
+        leadForm.classList.remove('hidden');
+        successMessage.classList.add('hidden');
+       });
      }
     });
    }
